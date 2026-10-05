@@ -1,0 +1,418 @@
+.App {
+  text-align: center;
+}
+
+.App-logo {
+  height: 40vmin;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .App-logo {
+    animation: App-logo-spin infinite 20s linear;
+  }
+}
+
+.App-header {
+  background-color: #282c34;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
+  color: white;
+}
+
+.App-link {
+  color: #61dafb;
+}
+
+@keyframes App-logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+  box-shadow: inset 0 0 1px grey;
+  /* border-radius: 5px; */
+}
+
+/* Handle */
+::-webkit-scrollbar-thumb {
+  background: black;
+  /* border-radius: 5px; */
+}
+
+/* Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+  background: black;
+}
+
+.minWrap {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  height: 100vh;
+  transition: grid-template-columns 0.3s ease;
+}
+
+.aside {
+  background-color: #121111;
+  padding: 16px;
+  color: white;
+  font-family: 'Baloo Bhaijaan 2', cursive;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  min-width: 60px;
+}
+
+.logo {
+  display: flex;
+  border-bottom: 1px solid white;
+}
+
+.asideInner {
+  flex: 1;
+}
+
+.clientsList {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.textbox-message {
+  display: block;
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  margin-top: 32rem;
+  margin-right: 1rem;
+  width: 17%;
+}
+
+.rightTab {
+  float: right;
+  height: 100vh;
+  background-color: #121111;
+  width: 300px;
+  top: 0;
+  bottom: 0;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  position: relative;
+  min-width: 60px;
+}
+
+.editorWrap {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  min-width: 0;
+}
+
+.middleTab {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.editor-section {
+  background: #1e1e1e;
+  overflow: hidden;
+  min-height: 60px;
+}
+
+.resize-handle {
+  height: 8px;
+  flex-shrink: 0;
+  background: #1e1e1e;
+  border-top: 1px solid #333;
+  border-bottom: 1px solid #333;
+  cursor: row-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: none;
+}
+.resize-handle:hover {
+  background: #2a2a2a;
+}
+.resize-handle-grip {
+  width: 40px;
+  height: 3px;
+  border-radius: 2px;
+  background: #555;
+}
+.resize-handle:hover .resize-handle-grip {
+  background: #56b6c2;
+}
+
+.terminal-section {
+  background: #1e1e1e;
+  overflow: hidden;
+  /* Allow terminal-container to fill and scroll internally */
+  display: flex;
+  flex-direction: column;
+  min-height: 60px;
+}
+
+.client {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+}
+
+.username {
+  margin-top: 10px;
+}
+
+.btn-copy-btn {
+  margin-bottom: 1rem;
+}
+
+.btn-toggle-sidebar,
+.btn-toggle-chat {
+  transition: all 0.3s ease;
+}
+
+.btn-toggle-sidebar:hover,
+.btn-toggle-chat:hover {
+  transform: scale(1.1);
+  background-color: #5a75d4 !important;
+}
+
+.runbutton {
+  margin-left: 1rem;
+}
+
+.runbutton:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.editor-buttons {
+  display: flex;
+  float: right;
+  margin: 0.7rem;
+}
+
+.text-name {
+  padding-left: 8px;
+  font-size: larger;
+  color: rgba(231, 11, 56, 0.78);
+}
+
+.text-message {
+  color: white;
+  font-size: large;
+  font-weight: 350;
+}
+
+.btn-copy-btn:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.all-btn:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+/* Monaco Editor specific styles */
+.monaco-editor {
+  border-radius: 4px;
+}
+
+/* Responsive adjustments for collapsed sidebars */
+@media (max-width: 768px) {
+  .aside {
+    min-width: 50px;
+  }
+  
+  .rightTab {
+    min-width: 50px;
+  }
+  
+  .btn-toggle-sidebar,
+  .btn-toggle-chat {
+    width: 25px;
+    height: 25px;
+    font-size: 10px;
+  }
+}
+
+/* Smooth transitions for all collapsible elements */
+.aside,
+.rightTab,
+.asideInner,
+.middleTab {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Ensure proper spacing when sidebars are collapsed */
+.aside:has(.asideInner[style*="opacity: 0"]) {
+  padding: 8px;
+}
+
+.rightTab:has(div[style*="opacity: 0"]) {
+  padding: 8px;
+}
+
+/* Terminal Styles */
+.terminal-container {
+  background: #1e1e1e;
+  border: 1px solid #333;
+  border-radius: 4px;
+  margin: 10px;
+  overflow: hidden;
+  /* Make container fill available height and use flex for header/body */
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.terminal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: #2d2d2d;
+  border-bottom: 1px solid #444;
+  color: white;
+  font-family: 'Baloo Bhaijaan 2', cursive;
+  font-size: 14px;
+}
+
+.terminal-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.terminal-body {
+  padding: 8px;
+  background: #1e1e1e;
+  /* Allow internal scroll without growing the page */
+  flex: 1 1 auto;
+  min-height: 0; /* important so child can shrink and enable scroll */
+  overflow: auto;
+}
+
+/* xterm.js customizations */
+.terminal-body .xterm {
+  padding: 8px;
+}
+
+.terminal-body .xterm-viewport {
+  background: #1e1e1e !important;
+}
+
+.terminal-body .xterm-screen {
+  background: #1e1e1e !important;
+}
+
+/* Responsive terminal */
+@media (max-width: 768px) {
+  .terminal-container {
+    margin: 5px;
+  }
+  
+  .terminal-header {
+    padding: 6px 8px;
+    font-size: 12px;
+  }
+  
+  .terminal-controls {
+    gap: 4px;
+  }
+  
+  .terminal-controls .btn {
+    padding: 2px 6px;
+    font-size: 10px;
+  }
+}
+/* --- Join gate (direct room-link join without a stored username) --- */
+.join-gate {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #1e1e1f;
+}
+
+.join-gate-card {
+  width: 20rem;
+  background: #242424;
+  border: 1px solid #333;
+  border-radius: 14px;
+  padding: 1.75rem;
+  text-align: center;
+  font-family: 'Baloo Bhaijaan 2', cursive;
+  color: white;
+}
+
+.join-gate-title {
+  margin-top: 0.75rem;
+  color: rgb(231 11 56 / 88%);
+  font-weight: 800;
+}
+
+.join-gate-sub {
+  color: #999;
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+.join-gate-sub code {
+  color: #56b6c2;
+}
+
+.join-gate-input {
+  margin-bottom: 0.85rem;
+}
+
+.join-gate-btn {
+  width: 100%;
+  background-color: #E70B38 !important;
+  border: none !important;
+}
+
+/* --- Right sidebar Chat/AI tabs --- */
+.right-tabs {
+  display: flex;
+  border-bottom: 1px solid #333;
+  margin: 0 8px;
+}
+
+.right-tab, .right-tab-active {
+  flex: 1;
+  background: none;
+  border: none;
+  padding: 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-family: 'Baloo Bhaijaan 2', cursive;
+  color: #999;
+}
+
+.right-tab-active {
+  color: #56b6c2;
+  border-bottom: 2px solid #56b6c2;
+}
+
+/* --- Client tilt cards in sidebar --- */
+.client-tilt {
+  margin-bottom: 10px;
+}
