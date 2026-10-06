@@ -7,7 +7,7 @@ import InputGroup from 'react-bootstrap/InputGroup';
 // Reuses the room's already-joined socket (passed down from Editorpage) instead
 // of opening a second, disconnected socket — that second socket never actually
 // joined the room, so messages sent through it couldn't be scoped per-room.
-const Chat = ({ socketRef, roomId, username }) => {
+const Chat = ({ socketRef, roomId, username, socketReady }) => {
 	const [chat, setChat] = useState([]);
 	const [message, setMessage] = useState('');
 	const bottomRef = useRef(null);
@@ -30,7 +30,7 @@ const Chat = ({ socketRef, roomId, username }) => {
 			socket.off('message', onMessage);
 			socket.off('chat:history', onHistory);
 		};
-	}, [socketRef]);
+	}, [socketRef, socketReady]);
 
 	useEffect(() => {
 		bottomRef.current?.scrollIntoView({ behavior: 'smooth' });

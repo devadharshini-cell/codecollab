@@ -253,6 +253,12 @@ io.on('connection', (socket) => {
         }
     });
 
+    // Share terminal run output with everyone else in the room
+    socket.on('terminal:output', ({ roomId, username, fileName, lines }) => {
+        if (!roomId || !Array.isArray(lines)) return;
+        socket.to(roomId).emit('terminal:output', { username, fileName, lines: lines.slice(0, 500) });
+    });
+
     //For chat message — scoped to the sender's room only, and persisted if MongoDB is connected
     socket.on('message', ({ roomId, name, message }) => {
         if (!roomId || !message) return;

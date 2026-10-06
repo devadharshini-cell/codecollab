@@ -285,6 +285,7 @@ const Editorpage = () => {
                 <TerminalComponent
                   socketRef={socketRef}
                   roomId={roomId}
+                  username={username}
                   editorFiles={editorState.files}
                   activeFileId={editorState.activeFileId}
                 />
@@ -344,7 +345,7 @@ const Editorpage = () => {
             >AI Assistant</button>
           </div>
           <div style={{ flex: 1, minHeight: 0 }}>
-            {rightTab === 'chat' ? <Chat socketRef={socketRef} roomId={roomId} username={username} /> : <AIAssistant activeFile={activeFile} />}
+            {rightTab === 'chat' ? <Chat socketRef={socketRef} roomId={roomId} username={username} socketReady={socketReady} /> : <AIAssistant activeFile={activeFile} />}
           </div>
         </div>
       </div>

@@ -15,7 +15,7 @@ const LANG_LABELS = {
     cpp: 'C++ (g++)',
 };
 
-const TerminalComponent = ({ socketRef, roomId, editorFiles, activeFileId }) => {
+const TerminalComponent = ({ socketRef, roomId, username, editorFiles, activeFileId }) => {
     const terminalRef = useRef(null);
     const xtermRef = useRef(null);
     const fitAddonRef = useRef(null);
@@ -126,6 +126,22 @@ const TerminalComponent = ({ socketRef, roomId, editorFiles, activeFileId }) => 
         const t = setTimeout(() => fitAddonRef.current?.fit(), 350);
         return () => clearTimeout(t);
     }, [isTerminalActive]);
+
+    // Show other players' run output in this terminal too
+    useEffect(() => {
+        const socket = socketRef?.current;
+        if (!socket) return;
+        const onOutput = ({ username: who, fileName, lines }) => {
+            const x = xtermRef.current;
+            if (!x) return;
+            x.writeln('');
+            x.writeln(`\x1b[35m● ${who} ran ${fileName}\x1b[0m`);
+            (lines || []).forEach((l) => x.writeln(l));
+            x.write('\x1b[1;32m❯\x1b[0m ');
+        };
+        socket.on('terminal:output', onOutput);
+        return () => socket.off('terminal:output', onOutput);
+    }, [socketRef]);
 
     const getActiveFile = () => {
         const files = filesRef.current;
@@ -262,7 +278,10 @@ const TerminalComponent = ({ socketRef, roomId, editorFiles, activeFileId }) => 
         }
     };
 
-    const runFileInBackend = async (file, xterm) => {
+    const runFileInBackend = async (file, term) => {
+        // Mirror everything written to the terminal so we can broadcast it to the room
+        const lines = [];
+        const xterm = { writeln: (s) => { term.writeln(s); lines.push(s); } };
         try {
             const response = await axios.post(`${SERVER_URL}/${file.runtime}`, { runcode: file.content });
             const data = response.data;
@@ -281,10 +300,14 @@ const TerminalComponent = ({ socketRef, roomId, editorFiles, activeFileId }) => 
             }
         } catch (err) {
             writeErr(xterm, `Execution failed: ${err.message}`);
-            writeWarn(xterm, `The ${file.runtime} runtime may not be installed on the server, or your project folder path has spaces/special characters (e.g. "Downloads\\My Project (1)") which can break compilation on Windows.`);
+            writeWarn(xterm, `The ${file.runtime} runtime may not be installed on the server.`);
             writeWarn(xterm, `Try: evaluate ${file.name}  ← AI will predict the output`);
         }
         xterm.writeln('');
+        const socket = socketRef?.current;
+        if (socket && roomId) {
+            socket.emit('terminal:output', { roomId, username, fileName: file.name, lines });
+        }
     };
 
     const evaluateFileWithAI = async (file, xterm) => {
