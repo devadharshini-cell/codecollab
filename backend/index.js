@@ -97,6 +97,37 @@ function ensurePublicMainClass(src) {
     return src.slice(0, last.index) + 'public ' + src.slice(last.index);
 }
 
+// Students often write browser-style JavaScript (prompt / alert), but the run
+// button executes plain Node, where those don't exist. Append tiny versions to
+// the END of the program: function declarations are hoisted, so they work from
+// line 1 without shifting any line numbers. prompt() reads one line per call
+// from the INPUT box. Skipped when the program defines its own prompt/alert.
+function addBrowserShims(src) {
+    if (typeof src !== 'string') return src;
+    const declares = (name) => new RegExp('\\b(?:const|let|var|function|class)\\s+' + name + '\\b').test(src);
+    let extra = '';
+    if (/\bprompt\s*\(/.test(src) && !declares('prompt')) {
+        extra += `
+var __cc_lines, __cc_pos;
+function prompt(message) {
+  if (!__cc_lines) {
+    try { __cc_lines = require('fs').readFileSync(0, 'utf8').split(/\\r?\\n/); } catch (e) { __cc_lines = []; }
+    __cc_pos = 0;
+  }
+  var answer = __cc_pos < __cc_lines.length ? __cc_lines[__cc_pos++] : null;
+  if (message !== undefined) process.stdout.write(String(message) + ' ' + (answer === null ? '' : answer) + '\\n');
+  return answer;
+}
+`;
+    }
+    if (/\balert\s*\(/.test(src) && !declares('alert')) {
+        extra += `
+function alert(message) { console.log(message === undefined ? '' : String(message)); }
+`;
+    }
+    return extra ? src + '\n' + extra : src;
+}
+
 function describeFailure(result) {
     if (result.errorType === 'run-timeout') {
         return `Your program timed out after ${10}s without finishing. This usually means it is waiting for input (cin/scanf/input()) — type your values in the Input box above the terminal and run again — or it has an infinite loop.`;
@@ -132,7 +163,7 @@ app.post("/python", (req, res) => {
         });
 })
 app.post("/node", (req, res) => {
-    const resultPromise = node.runSource(req.body.runcode, { timeout: 10000, stdin: getStdin(req) });
+    const resultPromise = node.runSource(addBrowserShims(req.body.runcode), { timeout: 10000, stdin: getStdin(req) });
     resultPromise
         .then(result => {
             console.log('[node]', result);
