@@ -20,6 +20,10 @@ const TerminalComponent = ({ socketRef, roomId, username, editorFiles, activeFil
     const xtermRef = useRef(null);
     const fitAddonRef = useRef(null);
     const [isTerminalActive, setIsTerminalActive] = useState(true);
+    // Program input (stdin) typed in the Input box. A ref mirrors it because the
+    // xterm key handler is created once and would otherwise see a stale value.
+    const [stdinText, setStdinText] = useState('');
+    const stdinRef = useRef('');
     const filesRef = useRef(editorFiles);
     const activeFileIdRef = useRef(activeFileId);
 
@@ -115,8 +119,19 @@ const TerminalComponent = ({ socketRef, roomId, username, editorFiles, activeFil
 
         const handleResize = () => fitAddonRef.current?.fit();
         window.addEventListener('resize', handleResize);
+
+        // Also refit when the terminal's own box changes size — e.g. dragging the
+        // editor/terminal divider, or resizing the Input box above it.
+        let observer = null;
+        if (typeof ResizeObserver !== 'undefined' && terminalRef.current) {
+            observer = new ResizeObserver(() => {
+                try { fitAddonRef.current?.fit(); } catch (e) { /* terminal hidden */ }
+            });
+            observer.observe(terminalRef.current);
+        }
         return () => {
             window.removeEventListener('resize', handleResize);
+            if (observer) observer.disconnect();
             xterm.dispose();
         };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -183,6 +198,9 @@ const TerminalComponent = ({ socketRef, roomId, username, editorFiles, activeFil
                         ['date', 'Show date/time'],
                     ];
                     helps.forEach(([c, d]) => xterm.writeln(`  \x1b[33m${c.padEnd(20)}\x1b[0m\x1b[90m${d}\x1b[0m`));
+                    xterm.writeln('');
+                    xterm.writeln('\x1b[90m  Programs that read input (cin, scanf, input(), Scanner):\x1b[0m');
+                    xterm.writeln('\x1b[90m  type the values in the INPUT box above, then run.\x1b[0m');
                     xterm.writeln('');
                     prompt(); break;
 
@@ -283,7 +301,12 @@ const TerminalComponent = ({ socketRef, roomId, username, editorFiles, activeFil
         const lines = [];
         const xterm = { writeln: (s) => { term.writeln(s); lines.push(s); } };
         try {
-            const response = await axios.post(`${SERVER_URL}/${file.runtime}`, { runcode: file.content });
+            const stdin = stdinRef.current;
+            if (stdin.trim()) {
+                const shown = stdin.trim().replace(/\n/g, ' ↵ ');
+                xterm.writeln(`\x1b[90m  input: ${shown.length > 80 ? shown.slice(0, 80) + '…' : shown}\x1b[0m`);
+            }
+            const response = await axios.post(`${SERVER_URL}/${file.runtime}`, { runcode: file.content, stdin });
             const data = response.data;
             if (data && typeof data === 'object' && data.error) {
                 writeErr(xterm, 'Execution failed:');
@@ -372,6 +395,34 @@ const TerminalComponent = ({ socketRef, roomId, username, editorFiles, activeFil
                     </button>
                 </div>
             </div>
+            {isTerminalActive && (
+                <div style={{
+                    display: 'flex', alignItems: 'flex-start', gap: 10,
+                    padding: '6px 12px', background: '#0D1117', borderBottom: '1px solid #21262D',
+                    flexShrink: 0,
+                }}>
+                    <label
+                        htmlFor="stdin-box"
+                        style={{ color: '#8B949E', fontSize: 11, fontWeight: 700, letterSpacing: 0.6, paddingTop: 6, fontFamily: 'Inter, sans-serif', whiteSpace: 'nowrap' }}
+                    >
+                        INPUT
+                    </label>
+                    <textarea
+                        id="stdin-box"
+                        value={stdinText}
+                        rows={2}
+                        spellCheck={false}
+                        placeholder={'Program input — e.g. 10 20  (use a new line or a space between values), then press ▶ Run'}
+                        onChange={(e) => { setStdinText(e.target.value); stdinRef.current = e.target.value; }}
+                        style={{
+                            flex: 1, resize: 'vertical', minHeight: 36, maxHeight: 140,
+                            background: '#010409', color: '#C9D1D9', border: '1px solid #30363D',
+                            borderRadius: 6, padding: '6px 10px', outline: 'none',
+                            fontSize: 13, fontFamily: 'JetBrains Mono, monospace',
+                        }}
+                    />
+                </div>
+            )}
             <div
                 ref={terminalRef}
                 style={{

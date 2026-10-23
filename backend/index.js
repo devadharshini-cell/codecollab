@@ -73,9 +73,17 @@ function ensureCompilerAvailable(runtime) {
     return compilerAvailability[runtime];
 }
 
+// Program input (stdin) typed by the user in the Input box. Makes programs that
+// read from cin / scanf / input() / Scanner / readline work with real values.
+function getStdin(req) {
+    const raw = typeof req.body.stdin === 'string' ? req.body.stdin : '';
+    if (!raw) return '';
+    return raw.endsWith('\n') ? raw : raw + '\n';
+}
+
 function describeFailure(result) {
     if (result.errorType === 'run-timeout') {
-        return `Your program timed out after ${10}s without finishing. This usually means it's waiting for input (cin/scanf/input()) that never arrives, or it has an infinite loop.`;
+        return `Your program timed out after ${10}s without finishing. This usually means it is waiting for input (cin/scanf/input()) — type your values in the Input box above the terminal and run again — or it has an infinite loop.`;
     }
     if (result.errorType === 'compile-timeout') {
         return `Compilation took too long and was stopped. Try again — this can happen on a slow first run.`;
@@ -91,7 +99,7 @@ app.use(express.json())
 
 //Compiling code for all languages
 app.post("/python", (req, res) => {
-    const resultPromise = python.runSource(req.body.runcode, { timeout: 10000 });
+    const resultPromise = python.runSource(req.body.runcode, { timeout: 10000, stdin: getStdin(req) });
     resultPromise
         .then(result => {
             console.log('[python]', result);
@@ -108,7 +116,7 @@ app.post("/python", (req, res) => {
         });
 })
 app.post("/node", (req, res) => {
-    const resultPromise = node.runSource(req.body.runcode, { timeout: 10000 });
+    const resultPromise = node.runSource(req.body.runcode, { timeout: 10000, stdin: getStdin(req) });
     resultPromise
         .then(result => {
             console.log('[node]', result);
@@ -128,7 +136,7 @@ app.post("/java", (req, res) => {
     if (!ensureCompilerAvailable('java')) {
         return res.json({ error: true, stderr: `'javac' was not found on this server's PATH. Install a JDK (e.g. Adoptium Temurin) to run Java here, or use "evaluate" for an AI-predicted result.` });
     }
-    const resultPromise = java.runSource(req.body.runcode, { timeout: 10000, compileTimeout: 15000 });
+    const resultPromise = java.runSource(req.body.runcode, { timeout: 10000, compileTimeout: 15000, stdin: getStdin(req) });
     resultPromise
         .then(result => {
             console.log('[java]', result);
@@ -148,7 +156,7 @@ app.post("/c", (req, res) => {
     if (!ensureCompilerAvailable('c')) {
         return res.json({ error: true, stderr: `'gcc' was not found on this server's PATH. Install MSYS2/MinGW-w64 (Windows) to run C here, or use "evaluate" for an AI-predicted result.` });
     }
-    const resultPromise = c.runSource(req.body.runcode, { timeout: 10000, compileTimeout: 15000 });
+    const resultPromise = c.runSource(req.body.runcode, { timeout: 10000, compileTimeout: 15000, stdin: getStdin(req) });
     resultPromise
         .then(result => {
             console.log('[c]', result);
@@ -168,7 +176,7 @@ app.post("/cpp", (req, res) => {
     if (!ensureCompilerAvailable('cpp')) {
         return res.json({ error: true, stderr: `'g++' was not found on this server's PATH. Install MSYS2/MinGW-w64 (Windows) to run C++ here, or use "evaluate" for an AI-predicted result.` });
     }
-    const resultPromise = cpp.runSource(req.body.runcode, { timeout: 10000, compileTimeout: 15000 });
+    const resultPromise = cpp.runSource(req.body.runcode, { timeout: 10000, compileTimeout: 15000, stdin: getStdin(req) });
     resultPromise
         .then(result => {
             console.log('[cpp]', result);
