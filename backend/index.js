@@ -81,6 +81,22 @@ function getStdin(req) {
     return raw.endsWith('\n') ? raw : raw + '\n';
 }
 
+// compile-run's Java runner only works when the main class is declared
+// `public class X`; a plain `class Main` crashes it. Students often write the
+// plain form, so quietly make the class that holds main() public.
+function ensurePublicMainClass(src) {
+    if (typeof src !== 'string') return src;
+    if (/\bpublic\s+(?:final\s+|abstract\s+)?class\s+\w+/.test(src)) return src;
+    const mainIdx = src.search(/static\s+void\s+main\s*\(/);
+    if (mainIdx === -1) return src;
+    const re = /\bclass\s+\w+/g;
+    const before = src.slice(0, mainIdx);
+    let last = null, m;
+    while ((m = re.exec(before)) !== null) last = m;
+    if (!last) return src;
+    return src.slice(0, last.index) + 'public ' + src.slice(last.index);
+}
+
 function describeFailure(result) {
     if (result.errorType === 'run-timeout') {
         return `Your program timed out after ${10}s without finishing. This usually means it is waiting for input (cin/scanf/input()) — type your values in the Input box above the terminal and run again — or it has an infinite loop.`;
@@ -88,7 +104,7 @@ function describeFailure(result) {
     if (result.errorType === 'compile-timeout') {
         return `Compilation took too long and was stopped. Try again — this can happen on a slow first run.`;
     }
-    return result.stderr || result.stdout || 'Unknown error';
+    return result.stderr || result.stdout || (result.code ? `Runner error: ${result.code}` : 'Unknown error');
 }
 
 const server = http.createServer(app);
@@ -136,7 +152,7 @@ app.post("/java", (req, res) => {
     if (!ensureCompilerAvailable('java')) {
         return res.json({ error: true, stderr: `'javac' was not found on this server's PATH. Install a JDK (e.g. Adoptium Temurin) to run Java here, or use "evaluate" for an AI-predicted result.` });
     }
-    const resultPromise = java.runSource(req.body.runcode, { timeout: 10000, compileTimeout: 15000, stdin: getStdin(req) });
+    const resultPromise = java.runSource(ensurePublicMainClass(req.body.runcode), { timeout: 10000, compileTimeout: 15000, stdin: getStdin(req) });
     resultPromise
         .then(result => {
             console.log('[java]', result);
