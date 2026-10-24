@@ -13,6 +13,7 @@ import toast from 'react-hot-toast';
 import ACTIONS from '../Actions';
 import { useNavigate, useParams } from 'react-router-dom';
 import Chat from './Chat';
+import VoiceChat from './VoiceChat';
 
 const Editorpage = () => {
   const socketRef = useRef(null);
@@ -210,6 +211,13 @@ const Editorpage = () => {
               </TiltCard>
             ))}
           </div>
+          <VoiceChat
+            socketRef={socketRef}
+            socketReady={socketReady}
+            roomId={roomId}
+            clients={clients}
+            collapsed={isLeftSidebarCollapsed}
+          />
         </div>
 
         <Button

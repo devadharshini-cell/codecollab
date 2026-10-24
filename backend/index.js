@@ -253,6 +253,23 @@ function getAllConnectedClients(roomId) {
     });
 }
 
+// ---- Voice chat signaling (WebRTC) ----
+// The audio itself flows directly between browsers (peer-to-peer). The server
+// only relays the small connection-handshake messages and tracks who is in voice.
+const voiceRooms = {}; // roomId -> Set of socket ids currently in voice
+
+function leaveVoice(socket) {
+    const roomId = socket.data.voiceRoom;
+    if (!roomId) return;
+    socket.data.voiceRoom = null;
+    const members = voiceRooms[roomId];
+    if (!members) return;
+    members.delete(socket.id);
+    socket.to(roomId).emit('voice:peer-left', { socketId: socket.id });
+    io.to(roomId).emit('voice:users', [...members]);
+    if (members.size === 0) delete voiceRooms[roomId];
+}
+
 //Socket io connection
 io.on('connection', (socket) => {
     console.log('socket connected', socket.id);
@@ -314,6 +331,35 @@ io.on('connection', (socket) => {
         socket.to(roomId).emit('terminal:output', { username, fileName, lines: lines.slice(0, 500) });
     });
 
+    // Voice chat: who is currently in voice for this room
+    socket.on('voice:who', ({ roomId }) => {
+        if (!roomId || !socket.rooms.has(roomId)) return;
+        socket.emit('voice:users', [...(voiceRooms[roomId] || [])]);
+    });
+
+    // Voice chat: join. The joiner receives the people already in voice and
+    // sends each of them an offer, so two people never offer at the same time.
+    socket.on('voice:join', ({ roomId }) => {
+        if (!roomId || !socket.rooms.has(roomId)) return; // must be in the room first
+        leaveVoice(socket);
+        const members = (voiceRooms[roomId] = voiceRooms[roomId] || new Set());
+        const existing = [...members];
+        members.add(socket.id);
+        socket.data.voiceRoom = roomId;
+        socket.emit('voice:peers', existing);
+        io.to(roomId).emit('voice:users', [...members]);
+    });
+
+    // Voice chat: relay a handshake message (offer / answer / ICE candidate) to one peer
+    socket.on('voice:signal', ({ to, data }) => {
+        const roomId = socket.data.voiceRoom;
+        if (!to || !data || !roomId) return;
+        if (!voiceRooms[roomId] || !voiceRooms[roomId].has(to)) return; // same voice room only
+        io.to(to).emit('voice:signal', { from: socket.id, data });
+    });
+
+    socket.on('voice:leave', () => leaveVoice(socket));
+
     //For chat message — scoped to the sender's room only, and persisted if MongoDB is connected
     socket.on('message', ({ roomId, name, message }) => {
         if (!roomId || !message) return;
@@ -323,6 +369,7 @@ io.on('connection', (socket) => {
 
     //For disconnection
     socket.on('disconnecting', () => {
+        leaveVoice(socket);
         const rooms = [...socket.rooms]
         rooms.forEach((roomId) => {
             socket.in(roomId).emit(ACTIONS.DISCONNECTED, {
